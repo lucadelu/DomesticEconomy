@@ -1,0 +1,8 @@
+{"Cibo": ["Ristorante", "Supermercato", "Alcolici"],
+ "Casa": ["Internet", "Luce", "Gas", "Riparazioni"],
+ "Trasporti": ["Benzina", "Mezzi pubblici", "Autostrada", "Riparazioni macchina"],
+ "Sport": ["Palestra", "Bici", "Escursionismo", "Sci"],
+ "Salute": ["Farmacia", "Visite specialistiche"],
+ "Vestiario adulti": ["Intimo", "Scarpe", "Giacche"],
+ "Bambini": ["Asilo", "Vestiti"]
+}
