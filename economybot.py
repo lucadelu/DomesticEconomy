@@ -62,6 +62,8 @@ def send_photo(chat_id, photo):
     url = URL + 'sendPhoto'
     files = {'photo': (dirname(photo), open(relpath(photo), "rb"))}
     r = requests.get(url, data=data, files=files)
+    content = r.content.decode("utf8")
+    return content
     
 def send_action(chat_id, action = 'typing'):
     url = URL + "sendChatAction?chat_id={}&action={}".format(chat_id, action)
@@ -73,7 +75,6 @@ def build_keyboard(items):
     return json.dumps(reply_markup)
     
 def handle_updates(updates):
-    
     for update in updates["result"]:
         try:
             if "from" in updates['result'][0]['message'].keys():
@@ -190,7 +191,7 @@ def handle_updates(updates):
                         send_message(msg, chat)
                 if len(text.split(" ")) == 3:
                     value, svalue = text.split(" ")[1:]
-                    sql = "INSERT INTO subcategory(catid, subcategory, category) VALUES ((select id from category where category = '{}'), '{}', '{}');".format(value, svalue, value)
+                    sql = "INSERT INTO subcategory(catid, subcategory) VALUES ((select id from category where category = '{}'), '{}');".format(value, svalue)
                     msg = db.sql(sql)
                     msg = "Value *{}* added on database!".format(svalue)
                     send_message(msg, chat)
