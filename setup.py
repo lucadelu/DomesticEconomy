@@ -17,7 +17,7 @@ def create_tables(conn):
     conn.commit()
 
     # creating users table:
-    tblurs = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user text, chat text);"
+    tblurs = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user text, chat text, active integer);"
     conn.execute(tblurs)
     conn.commit()
 
