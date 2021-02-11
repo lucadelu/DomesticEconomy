@@ -47,13 +47,6 @@ def create_tables(conn):
     conn.commit()
     return True
 
-def add_user(conn, user):
-    conn.execute("INSERT INTO users(user) VALUES ('{}');".format(user))
-    conn.commit()
-    res = conn.execute("SELECT id FROM users where user = '{}'".format(user))
-    return res.fetchone()[0]
-    
-
 def add_category(conn, cat):
     conn.execute("INSERT INTO category(category) VALUES ('{}');".format(cat))
     conn.commit()
@@ -67,15 +60,11 @@ def add_subcategory(conn, catid, subcat):
     res = conn.execute("SELECT id FROM subcategory where subcategory = '{}'".format(subcat))
     return res.fetchone()[0]
 
-    
 def main():
     parser = argparse.ArgumentParser(description="Setup database for DomesticEconomy")
     parser.add_argument("-d", "--database", type=str, 
                         default="domestic_economy.sqlite",
                         help="DomesticEconomy database name (default %(default)s)",
-    )
-    parser.add_argument("-u", "--user", type=str, nargs="+",
-                        help="Add a DomesticEconomy user",
     )
     parser.add_argument("-s", "--settings", type=str,
                         help="Path to a json file with category and subcategory")
@@ -84,10 +73,7 @@ def main():
     #connect to db
     conn = sqlite3.connect(args.database)
     create_tables(conn)
-    if args.user:
-        for u in args.user:
-            uid = add_user(conn, u)
-            print("User {myu} get ID {myi}".format(myu=u, myi=uid))
+
     if args.settings:
         with open(args.settings) as f:
             cats = json.load(f)
