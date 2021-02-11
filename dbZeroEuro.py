@@ -10,27 +10,20 @@ import time
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from email import encoders
-from API import email, password
+from API import email, password, database
 
 class DBHelper:
-    def __init__(self, dbname="gastos.sqlite"):
+    def __init__(self, dbname=database):
         self.dbname = dbname
         self.conn = sqlite3.connect(dbname)
 
     def insertuser(self, user, chat):
-        tblstmt = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user text, chat integer)"
-        #itemidx = "CREATE INDEX IF NOT EXISTS itemIndex ON items (description ASC)" 
-        #ownidx = "CREATE INDEX IF NOT EXISTS ownIndex ON items (owner ASC)"
-        self.conn.execute(tblstmt)
-        #self.conn.execute(itemidx)
-        #self.conn.execute(ownidx)
         self.conn.execute("insert into users(user, chat) values (?, ?);", (user, chat))
         self.conn.commit()
     
@@ -48,8 +41,8 @@ class DBHelper:
     
     def get_subcategory(self, cat = None):
         if cat:
-            stmt = "SELECT distinct(subcategory) FROM subcategory WHERE catid = (SELECT id from category where category = (?)) OR category = (?);"
-            args = (cat, '')
+            stmt = "SELECT distinct(subcategory) FROM subcategory WHERE catid = (SELECT id from category where category = (?));"
+            args = (cat,)
             return [x[0] for x in self.conn.execute(stmt, args)]
         else:
             stmt = "SELECT distinct(subcategory) FROM subcategory"
@@ -191,16 +184,13 @@ class DBHelper:
             return msg 
     
     # Database Backup function
-    def sqlite3_backup(self, dbfile = 'gastos.sqlite', backupdir = './backup', use_tls = True):
+    def sqlite3_backup(self, dbfile=database, backupdir='./backup', use_tls=True):
     
         # Create backupdir if not exist
         if not os.path.isdir(backupdir):
             os.makedirs(backupdir)
         # Create timestamped database copy
         backup_file = os.path.join(backupdir, os.path.basename(dbfile) + time.strftime("-%Y%m%d-%H%M%S"))
-    
-        connection = sqlite3.connect(dbfile)
-        cursor = connection.cursor()
     
         # Lock database before making a backup
         #cursor.execute('begin immediate')
