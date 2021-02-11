@@ -34,6 +34,10 @@ class DBHelper:
     def get_users(self):
         stmt = "SELECT distinct(user) FROM users"
         return [x[0] for x in self.conn.execute(stmt)]
+    
+    def get_active_chatid(self):
+        stmt = "SELECT distinct(chatid) FROM users WHERE active = 1"
+        return [x[0] for x in self.conn.execute(stmt)]
         
     def get_category(self):
         stmt = "SELECT distinct(category) FROM category"
