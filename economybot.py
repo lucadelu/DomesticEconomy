@@ -73,7 +73,19 @@ def build_keyboard(items):
     keyboard = [[item] for item in items]
     reply_markup = {"keyboard" : keyboard, "one_time_keyboard" : True}
     return json.dumps(reply_markup)
-    
+
+def try_add_category(text, chat):
+    cats = db.get_category()
+    value = text.split(" ")[1]
+    if value not in cats:
+        catid = db.add_category(value)
+        send_message("Category *{}* added on database".format(value), chat)
+    else:
+        catid = db.sql("SELECT id FROM category where category = '{}'".format(value))
+        msg = 'Not processed: Category *{}* already exists;'.format(value)
+        send_message(msg, chat)
+    return catid
+
 def handle_updates(updates):
     for update in updates["result"]:
         try:
@@ -147,13 +159,15 @@ def handle_updates(updates):
                     if len(text.split(" "))>=3:
                         month = text.split(" ")[2].zfill(2)
                         year = date.date.today().year
-                        if len(text.split(" "))==4:
+                        if len(text.split(" ")) == 4:
                             year = text.split(" ")[3]
                     else:
                         month = str(date.date.today().month).zfill(2)
                         year = date.date.today().year
                     path = db.get_plots(param, month, year)
-                    if isinstance(path, list):
+                    if path is False:
+                        send_message("There was a problem with the plot", chat)
+                    elif isinstance(path, list):
                         for plot in path:
                             send_photo(chat_id=chat, photo=plot)
                     elif path.startswith('Not'):
@@ -180,20 +194,13 @@ def handle_updates(updates):
             
             if text.startswith("/add"):
                 if len(text.split(" ")) == 2:                
-                    cats = db.get_category()
-                    value = text.split(" ")[1]
-                    if value not in cats:
-                        sql = "INSERT INTO category(category) VALUES ('{}')".format(value)
-                        msg = db.sql(sql)
-                        send_message("Value *{}* added on databse".format(value), chat)
-                    else:
-                        msg = 'Not processed: Category *{}* already exists;'.format(value)
-                        send_message(msg, chat)
+                    cid = try_add_category(text, chat)
                 if len(text.split(" ")) == 3:
                     value, svalue = text.split(" ")[1:]
-                    sql = "INSERT INTO subcategory(catid, subcategory) VALUES ((select id from category where category = '{}'), '{}');".format(value, svalue)
+                    cid = try_add_category(text, chat)
+                    sql = "INSERT INTO subcategory(catid, subcategory) VALUES ({}, '{}');".format(cid, svalue)
                     msg = db.sql(sql)
-                    msg = "Value *{}* added on database!".format(svalue)
+                    msg = "Subcategory *{}* added to category {}".format(svalue, value)
                     send_message(msg, chat)
         
         except KeyError:
