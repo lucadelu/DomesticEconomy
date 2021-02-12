@@ -20,7 +20,7 @@ def main():
 
     #connect to db
     db = DBHelper()
-
+    db.create_tables()
     if args.settings:
         with open(args.settings) as f:
             cats = json.load(f)
