@@ -23,7 +23,7 @@ class DBHelper:
         self.dbname = dbname
         self.conn = sqlite3.connect(dbname)
 
-    def create_tables(conn):
+    def create_tables(self):
         # creating general table:
         tblgeneral = "CREATE TABLE IF NOT EXISTS general (id INTEGER PRIMARY "\
                      "KEY AUTOINCREMENT, action integer, user integer, category"\
@@ -34,42 +34,42 @@ class DBHelper:
                      " KEY (category) REFERENCES category(id) ON DELETE "\
                      "CASCADE ON UPDATE CASCADE, FOREIGN KEY (subcategory) "\
                      "REFERENCES subcategory(id) ON DELETE CASCADE ON UPDATE CASCADE);"
-        conn.execute(tblgeneral)
+        self.conn.execute(tblgeneral)
         Indxgeneral = "CREATE INDEX indiceForeignKeys ON general (action, " \
                       "user, category, subcategory);"
-        conn.execute(Indxgeneral)
-        conn.commit()
+        self.conn.execute(Indxgeneral)
+        self.conn.commit()
 
         # creating users table:
         tblurs = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY " \
                  "AUTOINCREMENT, user text, chat text, active integer);"
-        conn.execute(tblurs)
-        conn.commit()
+        self.conn.execute(tblurs)
+        self.conn.commit()
 
         # creating action table:
         tblaction = "CREATE TABLE IF NOT EXISTS action (id INTEGER PRIMARY " \
                     "KEY AUTOINCREMENT, action text);"
-        conn.execute(tblaction)
-        conn.execute("insert into action(action) values ('Expenses');")
-        conn.execute("insert into action(action) values ('Income');")
-        conn.commit()
+        self.conn.execute(tblaction)
+        self.conn.execute("insert into action(action) values ('Expenses');")
+        self.conn.execute("insert into action(action) values ('Income');")
+        self.conn.commit()
 
         # creating category table:
         tblcategory = "CREATE TABLE IF NOT EXISTS category (id INTEGER " \
                       "PRIMARY KEY AUTOINCREMENT, category text);"
-        conn.execute(tblcategory)
-        conn.commit()
+        self.conn.execute(tblcategory)
+        self.conn.commit()
 
         # creating subcategory table:
         tblscategory = "CREATE TABLE IF NOT EXISTS subcategory (id INTEGER " \
                        "PRIMARY KEY AUTOINCREMENT, catid integer, subcategory" \
                        " text, FOREIGN KEY (catid) REFERENCES category(id) " \
                        "ON DELETE CASCADE ON UPDATE CASCADE);"
-        conn.execute(tblscategory)
-        conn.commit()
+        self.conn.execute(tblscategory)
+        self.conn.commit()
 
         # Creating views with complete tables:
-        conn.execute("CREATE VIEW IF NOT EXISTS view_general AS SELECT "
+        self.conn.execute("CREATE VIEW IF NOT EXISTS view_general AS SELECT "
                      "action.action, users.user, category.category, "
                      "subcategory.subcategory, general.value , substr(date, 6,"
                      " 2) as month, substr(date, 1, 4) as year FROM general "
@@ -77,14 +77,14 @@ class DBHelper:
                      "JOIN users on users.id = general.user INNER JOIN "
                      "category on category.id = general.category INNER JOIN "
                      "subcategory on subcategory.id = general.subcategory;")
-        conn.execute("CREATE VIEW IF NOT EXISTS view_catsummary AS SELECT "
+        self.conn.execute("CREATE VIEW IF NOT EXISTS view_catsummary AS SELECT "
                      "category.category, sum(general.value) as total, "
                      "substr(date, 6, 2) as month, substr(date, 1, 4) as year"
                      " FROM general INNER JOIN category on category.id = "
                      "general.category WHERE general.action = (SELECT id from"
                      " action where action = 'Expenses') GROUP BY general.category,"
                      " month, year;")
-        conn.execute("CREATE VIEW IF NOT EXISTS view_scatsummary AS SELECT "
+        self.conn.execute("CREATE VIEW IF NOT EXISTS view_scatsummary AS SELECT "
                      "category.category, subcategory.subcategory, sum("
                      "general.value) as total, substr(date, 6, 2) as month, "
                      "substr(date, 1, 4) as year FROM general INNER JOIN "
@@ -93,19 +93,19 @@ class DBHelper:
                      " general.action = (SELECT id from action where action ="
                      " 'Expenses') GROUP BY general.category, general.subcategory,"
                      " month, year;")
-        conn.execute("CREATE VIEW IF NOT EXISTS view_usersummary AS SELECT "
+        self.conn.execute("CREATE VIEW IF NOT EXISTS view_usersummary AS SELECT "
                      "users.user, sum(general.value) as total, "
                      "substr(date, 6, 2) as month, substr(date, 1, 4) as year"
                      " FROM general INNER JOIN users on users.id = general.user"
                      " WHERE general.action = (SELECT id from action where "
                      "action = 'Expenses') GROUP BY general.user, month, year;")
-        conn.execute("CREATE VIEW IF NOT EXISTS view_action as SELECT "
+        self.conn.execute("CREATE VIEW IF NOT EXISTS view_action as SELECT "
                      "action.action, sum(general.value ) as total, "
                      "substr(date, 6, 2) as month, substr(date, 1, 4) as year"
                      " FROM general INNER JOIN action on action.id = "
                      "general.action group by action.action, month, year "
                      "ORDER BY year, month;")
-        conn.commit()
+        self.conn.commit()
         return True
 
     def insertuser(self, user, chat):
@@ -166,7 +166,7 @@ class DBHelper:
 
     def insertIncome(self, owner, value, date):
         stmt = "INSERT INTO general(action, user, value, date) VALUES ((SELECT" \
-               " id from action where action = 'receita'), (select id from " \
+               " id from action where action = 'Income'), (select id from " \
                "users where user = (?)), (?), (?));"
         args = (owner, value, date)
         self.conn.execute(stmt, args)
@@ -212,33 +212,42 @@ class DBHelper:
         if not os.path.exists(plotwd):
             os.makedirs(plotwd)
         if param == 'category':
-            CatPlot = pd.read_sql("SELECT category, total from view_catsummary"
-                                  " WHERE month = '{}' AND year = '{}' ORDER "
-                                  "BY 2 DESC".format(month, year), self.conn)
-            CatPlot.plot.bar(x="category", y="total", legend = False, rot=7)
-            path = os.path.join(os.getcwd(), plotwd) + '/Category_plot.png'
-            plt.savefig(path)  # save the figure to file
-            plt.close()
-            return str(path)
+            try:
+                CatPlot = pd.read_sql("SELECT category, total from view_catsummary"
+                                      " WHERE month = '{}' AND year = '{}' ORDER "
+                                      "BY 2 DESC".format(month, year), self.conn)
+                CatPlot.plot.bar(x="category", y="total", legend = False, rot=7)
+                path = os.path.join(os.getcwd(), plotwd) + '/Category_plot.png'
+                plt.savefig(path)  # save the figure to file
+                plt.close()
+                return str(path)
+            except:
+                return False
         elif param == 'subcategory':
-            SubCatPlot = pd.read_sql("SELECT category, subcategory, total FROM"
-                                     " view_scatsummary WHERE month = '{}' AND"
-                                     " year = '{}' ORDER BY 3 DESC".format(month, year), self.conn)
-            SubCatPlot["SubCategorias"] = SubCatPlot.category + " " + SubCatPlot.subcategory
-            SubCatPlot.plot.bar(x = "SubCategorias", y = "total", legend = False, rot=90)
-            path = os.path.join(os.getcwd(), plotwd) + '/SubCategory_plot.png'
-            plt.savefig(path)  # save the figure to file
-            plt.close()
-            return str(path)
+            try:
+                SubCatPlot = pd.read_sql("SELECT category, subcategory, total FROM"
+                                         " view_scatsummary WHERE month = '{}' AND"
+                                         " year = '{}' ORDER BY 3 DESC".format(month, year), self.conn)
+                SubCatPlot["SubCategorias"] = SubCatPlot.category + " " + SubCatPlot.subcategory
+                SubCatPlot.plot.bar(x = "SubCategorias", y = "total", legend = False, rot=90)
+                path = os.path.join(os.getcwd(), plotwd) + '/SubCategory_plot.png'
+                plt.savefig(path)  # save the figure to file
+                plt.close()
+                return str(path)
+            except:
+                return False
         elif param == 'user':
-            UserPlot = pd.read_sql("SELECT user, total from view_usersummary "
-                                   "WHERE month = '{}' and year = '{}' ORDER "
-                                   "BY 2 DESC".format(month, year), self.conn)
-            UserPlot.pivot_table(columns="user").plot.bar(legend = True, rot=0)
-            path = os.path.join(os.getcwd(), plotwd) + '/User_plot.png'
-            plt.savefig(path)  # save the figure to file
-            plt.close()
-            return str(path)
+            try:
+                UserPlot = pd.read_sql("SELECT user, total from view_usersummary "
+                                       "WHERE month = '{}' and year = '{}' ORDER "
+                                       "BY 2 DESC".format(month, year), self.conn)
+                UserPlot.pivot_table(columns="user").plot.bar(legend = True, rot=0)
+                path = os.path.join(os.getcwd(), plotwd) + '/User_plot.png'
+                plt.savefig(path)  # save the figure to file
+                plt.close()
+                return str(path)
+            except:
+                return False
         elif param == 'historico':
             # Retrieving data
             df_general = pd.read_sql("SELECT general.id, action.action, "
