@@ -42,7 +42,8 @@ class DBHelper:
 
         # creating users table:
         tblurs = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY " \
-                 "AUTOINCREMENT, user text, chat text, active integer);"
+                 "AUTOINCREMENT, user text, chat text, active integer DEFAULT"\
+                 " 0, superuser integer DEFAULT 0);"
         self.conn.execute(tblurs)
         self.conn.commit()
 
@@ -318,22 +319,25 @@ class DBHelper:
             return str(path)
 
     # Function to mannage SQL from message
-    def sql(self, sql):
+    def sql(self, sql, superuser=False):
         if sql.upper().startswith("ALTER TABLE"):
-            msg = "ALTER TABLE NOT ALLOWED BY MSG"
-            return msg
+            return "ALTER TABLE NOT ALLOWED BY MSG"
         elif sql.upper().startswith("DROP"):
-            msg = "DROP [TABLE/VIEW] NOT ALLOWED BY MSG"
-            return msg
+            return "DROP [TABLE/VIEW] NOT ALLOWED BY MSG"
+        elif sql.upper().startswith("INSERT"):
+            if not superuser:
+                return "INSERT INTO [TABLE/VIEW] NOT ALLOWED BY MSG"
+        elif sql.upper().startswith("UPDATE"):
+            if not superuser:
+                return "UPDATE [TABLE/VIEW] NOT ALLOWED BY MSG"
         elif sql.upper().startswith("SELECT"):
             res = self.conn.execute(sql).fetchall()
             res = pd.DataFrame(res)
             return res
-        else:
-            self.conn.execute(sql)
-            self.conn.commit()
-            msg = 'All done!'
-            return msg
+        self.conn.execute(sql)
+        self.conn.commit()
+        msg = 'All done!'
+        return msg
 
     # Database Backup function
     def sqlite3_backup(self, dbfile=database, backupdir='./backup', use_tls=True):
