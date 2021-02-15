@@ -200,8 +200,10 @@ def handle_updates(updates):
                 send_message("All done!", chat)
 
             if text.startswith("/sql"):
+                res = db.sql("SELECT superuser FROM user where chatid = '{}'".format(chat))
+                su = res[0][0]
                 sql = text[5:]
-                msg = db.sql(sql)
+                msg = db.sql(sql, su)
                 send_message("{}".format(msg), chat)
 
             if text.startswith("/add"):
