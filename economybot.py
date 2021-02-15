@@ -6,7 +6,7 @@ Created on Fri Jan 12 04:21:29 2018
 https://github.com/FelipeSBarros
 """
 
-import json 
+import json
 import requests
 from API import API # bot API
 import time
@@ -64,11 +64,11 @@ def send_photo(chat_id, photo):
     r = requests.get(url, data=data, files=files)
     content = r.content.decode("utf8")
     return content
-    
+
 def send_action(chat_id, action = 'typing'):
     url = URL + "sendChatAction?chat_id={}&action={}".format(chat_id, action)
     get_url(url)
-    
+
 def build_keyboard(items):
     keyboard = [[item] for item in items]
     reply_markup = {"keyboard" : keyboard, "one_time_keyboard" : True}
@@ -93,11 +93,18 @@ def handle_updates(updates):
                 user = update["message"]["from"]["first_name"]
             else:
                 user = update["message"]["chat"]["first_name"]
-            
+
             text = update["message"]["text"]
             chat = update["message"]["chat"]["id"]
-            
-            if text == "/start": 
+
+            enabled_chats = db.sql('SELECT chat from users where active is 1;')
+            chats_list = enabled_chats.to_numpy().tolist()
+            flatList = [ item for elem in chats_list for item in elem]
+            if str(chat) not in flatList:
+                send_message("User not enabled", chat)
+                continue
+
+            if text == "/start":
                 send_message("Welcome to Dosmestic Economy Bot! Your personal assistent, {}!!".format(user), chat) #confirmar se vai funcionar
                 users = db.get_users()
                 if user not in users:
@@ -107,7 +114,7 @@ def handle_updates(updates):
                 send_message("To know the *category* you can use, just type `/category` and I send you the options you have. \n The same for *subcategory* (just write `/subcategory`)", chat)
                 send_action(chat)
                 send_message("Also, you can save your incomes! Just type `/income [value]` \n `/income 1000`", chat)
-                
+
             if text.startswith("/expenses"):
                 if len(text.split(" "))<4:
                     send_message("Sorry, I couldnt save your expenses. Something is missing", chat)
@@ -121,20 +128,20 @@ def handle_updates(updates):
                 send_message("Saving income!!", chat)
                 db.insertIncome(user, value, date.date.today())
                 send_message("Well done!\n {} inserted as income!".format(value), chat)
-                
+
             if text == "/category":
                 cats = db.get_category()
                 send_message("Your options for **category** are:\n\n{}".format('\n'.join(cats)), chat)
-            
+
             if text.startswith("/subcategory"):
                 if len(text.split(" "))==1:
                     subcats = db.get_subcategory()
-                    send_message("*Subcategory* options:\n\n{}".format('\n'.join(subcats)), chat)    
+                    send_message("*Subcategory* options:\n\n{}".format('\n'.join(subcats)), chat)
                 if len(text.split(" "))==2:
                     command, cat = text.split(" ")
                     subcats = db.get_subcategory(cat)
                     send_message("*Subcategory* options for the category *{}*, are:\n\n{}".format(cat, '\n'.join(subcats)), chat)
-            
+
             if text.startswith("/summary"):
                 if len(text.split(" "))>=2:
                     param = text.split(" ")[1]
@@ -176,24 +183,24 @@ def handle_updates(updates):
                         #print(path)
                         send_photo(chat_id = chat, photo = path)
                 else:
-                    send_message("*Wrong parameter sent!*\n you ust send:\n /plot [param] [month] [year]", chat)    
+                    send_message("*Wrong parameter sent!*\n you ust send:\n /plot [param] [month] [year]", chat)
 
             if text.startswith("/backup"):
-                send_message("Building databse backup", chat)    
+                send_message("Building databse backup", chat)
                 db.sqlite3_backup()
                 if len(text.split(" "))==2:
                     NO_OF_DAYS = int(text.split(" ")[1])
-                    send_message("Removing backups with {} days or more".format(NO_OF_DAYS), chat)    
+                    send_message("Removing backups with {} days or more".format(NO_OF_DAYS), chat)
                     db.clean_data(backup_dir = './backup', NO_OF_DAYS = NO_OF_DAYS)
-                send_message("All done!", chat)    
-            
+                send_message("All done!", chat)
+
             if text.startswith("/sql"):
                 sql = text[5:]
                 msg = db.sql(sql)
                 send_message("{}".format(msg), chat)
-            
+
             if text.startswith("/add"):
-                if len(text.split(" ")) == 2:                
+                if len(text.split(" ")) == 2:
                     cid = try_add_category(text, chat)
                 if len(text.split(" ")) == 3:
                     value, svalue = text.split(" ")[1:]
@@ -202,10 +209,10 @@ def handle_updates(updates):
                     msg = db.sql(sql)
                     msg = "Subcategory *{}* added to category {}".format(svalue, value)
                     send_message(msg, chat)
-        
+
         except KeyError:
             pass
-        
+
 
 def main():
     last_update_id = None
