@@ -104,6 +104,7 @@ def handle_updates(updates):
                 send_message("User not enabled", chat)
                 continue
 
+            tsplit = text.split(" ")
             if text == "/start":
                 send_message("Welcome to Dosmestic Economy Bot! Your personal assistent, {}!!".format(user), chat) #confirmar se vai funcionar
                 users = db.get_users()
@@ -116,15 +117,15 @@ def handle_updates(updates):
                 send_message("Also, you can save your incomes! Just type `/income [value]` \n `/income 1000`", chat)
 
             if text.startswith("/expenses"):
-                if len(text.split(" "))<4:
+                if len(tsplit)<4:
                     send_message("Sorry, I couldnt save your expenses. Something is missing", chat)
                 else:
-                    action, value, category, subcategory = text.split(" ")
+                    action, value, category, subcategory = tsplit[:4]
                     db.insertExpenses(user, category, subcategory, float(value), date.date.today())
                     send_message("Ok, I'm done!\n {} inserted as expenses".format(value), chat)
 
             if text.startswith("/income"):
-                action, value = text.split(" ")
+                action, value = tsplit
                 send_message("Saving income!!", chat)
                 db.insertIncome(user, value, date.date.today())
                 send_message("Well done!\n {} inserted as income!".format(value), chat)
@@ -134,23 +135,23 @@ def handle_updates(updates):
                 send_message("Your options for **category** are:\n\n{}".format('\n'.join(cats)), chat)
 
             if text.startswith("/subcategory"):
-                if len(text.split(" "))==1:
+                if len(tsplit)==1:
                     subcats = db.get_subcategory()
                     send_message("*Subcategory* options:\n\n{}".format('\n'.join(subcats)), chat)
-                if len(text.split(" "))==2:
-                    command, cat = text.split(" ")
+                if len(tsplit)==2:
+                    command, cat = tsplit
                     subcats = db.get_subcategory(cat)
                     send_message("*Subcategory* options for the category *{}*, are:\n\n{}".format(cat, '\n'.join(subcats)), chat)
 
             if text.startswith("/summary"):
-                if len(text.split(" "))>=2:
-                    param = text.split(" ")[1]
-                    if len(text.split(" "))>=3:
-                        month = text.split(" ")[2]
+                if len(tsplit)>=2:
+                    param = tsplit[1]
+                    if len(tsplit)>=3:
+                        month = tsplit[2]
                         month = month.zfill(2)
                         year = date.date.today().year
-                        if len(text.split(" "))==4:
-                            year = text.split(" ")[3]
+                        if len(tsplit)==4:
+                            year = tsplit[3]
                     else:
                         month = str(date.date.today().month).zfill(2)
                         year = date.date.today().year
@@ -158,16 +159,20 @@ def handle_updates(updates):
                     send_message("*Summary by {} for moth {} and year {}*:".format(param, month, year), chat)
                     send_message("{}".format(summary), chat)
                 else:
-                    send_message("*Wrong parameter sent!*\n you ust send:\n /summary [param] [month] [year]\n where [month] and [year] are optional", chat)
+                    send_message("*Wrong parameter sent!*\n you ust send:\n "
+                                 "/summary [param] [month] [year]\n where "
+                                 "param is a choise between 'category', 'user'"
+                                 ", 'subcategory', 'balance' and "
+                                 "[month] and [year] are optional", chat)
 
             if text.startswith("/plot"):
-                if len(text.split(" "))>=2:
-                    param = text.split(" ")[1]
-                    if len(text.split(" "))>=3:
-                        month = text.split(" ")[2].zfill(2)
+                if len(tsplit)>=2:
+                    param = tsplit[1]
+                    if len(tsplit)>=3:
+                        month = tsplit[2].zfill(2)
                         year = date.date.today().year
-                        if len(text.split(" ")) == 4:
-                            year = text.split(" ")[3]
+                        if len(tsplit) == 4:
+                            year = tsplit[3]
                     else:
                         month = str(date.date.today().month).zfill(2)
                         year = date.date.today().year
@@ -188,8 +193,8 @@ def handle_updates(updates):
             if text.startswith("/backup"):
                 send_message("Building databse backup", chat)
                 db.sqlite3_backup()
-                if len(text.split(" "))==2:
-                    NO_OF_DAYS = int(text.split(" ")[1])
+                if len(tsplit)==2:
+                    NO_OF_DAYS = int(tsplit[1])
                     send_message("Removing backups with {} days or more".format(NO_OF_DAYS), chat)
                     db.clean_data(backup_dir = './backup', NO_OF_DAYS = NO_OF_DAYS)
                 send_message("All done!", chat)
@@ -200,10 +205,10 @@ def handle_updates(updates):
                 send_message("{}".format(msg), chat)
 
             if text.startswith("/add"):
-                if len(text.split(" ")) == 2:
+                if len(tsplit) == 2:
                     cid = try_add_category(text, chat)
-                if len(text.split(" ")) == 3:
-                    value, svalue = text.split(" ")[1:]
+                if len(tsplit) == 3:
+                    value, svalue = tsplit[1:]
                     cid = try_add_category(text, chat)
                     sql = "INSERT INTO subcategory(catid, subcategory) VALUES ({}, '{}');".format(cid, svalue)
                     msg = db.sql(sql)
