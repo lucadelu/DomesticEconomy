@@ -14,7 +14,6 @@ import urllib # to handle with pecial characters
 import datetime as date # to manage date and time
 from dbZeroEuro import DBHelper # import class and method created to work with sqlite3
 from os.path import dirname, relpath
-import pandas as pd
 
 TOKEN = API
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
@@ -81,7 +80,8 @@ def try_add_category(text, chat):
         catid = db.add_category(value)
         send_message("Category *{}* added on database".format(value), chat)
     else:
-        catid = db.sql("SELECT id FROM category where category = '{}'".format(value))
+        res = db.sql("SELECT id FROM category where category = '{}'".format(value))
+        catid = res[0][0]
         msg = 'Not processed: Category *{}* already exists;'.format(value)
         send_message(msg, chat)
     return catid
