@@ -97,12 +97,6 @@ def handle_updates(updates):
             text = update["message"]["text"]
             chat = update["message"]["chat"]["id"]
 
-            enabled_chats = db.sql('SELECT chat from users where active is 1;')
-            chats_list = enabled_chats.to_numpy().tolist()
-            flatList = [ item for elem in chats_list for item in elem]
-            if str(chat) not in flatList:
-                send_message("User not enabled", chat)
-                continue
 
             tsplit = text.split(" ")
             if text == "/start":
@@ -115,6 +109,14 @@ def handle_updates(updates):
                 send_message("To know the *category* you can use, just type `/category` and I send you the options you have. \n The same for *subcategory* (just write `/subcategory`)", chat)
                 send_action(chat)
                 send_message("Also, you can save your incomes! Just type `/income [value]` \n `/income 1000`", chat)
+                continue
+
+            enabled_chats = db.sql('SELECT chat from users where active is 1;')
+            chats_list = enabled_chats.to_numpy().tolist()
+            flatList = [ item for elem in chats_list for item in elem]
+            if str(chat) not in flatList:
+                send_message("User not enabled", chat)
+                continue
 
             if text.startswith("/expenses"):
                 if len(tsplit)<4:
